@@ -1,0 +1,36 @@
+# Runs the whole application with one command:
+#
+#   docker compose up --build
+#
+# then open http://localhost:3000
+#
+# The API is also reachable directly on http://localhost:8000/api/health.
+
+services:
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      # The frontend is served by nginx on the same origin, so strict CORS is
+      # safe here. Set ALLOW_ORIGINS to your deployed frontend URL when the
+      # two are hosted separately.
+      - ALLOW_ORIGINS=${ALLOW_ORIGINS:-http://localhost:3000}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health').status==200 else 1)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
