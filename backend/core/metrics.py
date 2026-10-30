@@ -8,10 +8,18 @@ generation.
 MAPE is deliberately absent: wind output drops to near zero on calm
 days, which makes percentage errors explode and dominate any average.
 MW-denominated errors stay meaningful across the whole month.
+
+January 2026 shows a large, persistent positive bias that does not shrink
+as delivery approaches. Because a systematic offset and a random miss are
+different problems with different fixes, :func:`summarise` reports both
+the raw error and the error left after the mean bias is removed, plus the
+correlation that shows how well the forecast tracks the *shape* of the
+day regardless of level.
 """
 
 from __future__ import annotations
 
+import math
 import statistics
 from collections.abc import Iterable, Sequence
 
@@ -64,6 +72,31 @@ def percentile(values: Sequence[float], p: float) -> float:
     return ordered[lower] + (ordered[upper] - ordered[lower]) * fraction
 
 
+def correlation(pairs: Iterable[tuple[float, float]]) -> float | None:
+    """Pearson correlation between forecast and actual levels.
+
+    Shows how well the forecast tracks the shape of the day irrespective
+    of any constant offset. Returns ``None`` when either series is
+    constant, in which case correlation is undefined.
+    """
+    pairs = list(pairs)
+    if len(pairs) < 2:
+        return None
+
+    forecasts = [pair[0] for pair in pairs]
+    actuals = [pair[1] for pair in pairs]
+    mean_f, mean_a = statistics.fmean(forecasts), statistics.fmean(actuals)
+
+    numerator = sum((f - mean_f) * (a - mean_a) for f, a in pairs)
+    spread_f = math.sqrt(sum((f - mean_f) ** 2 for f in forecasts))
+    spread_a = math.sqrt(sum((a - mean_a) ** 2 for a in actuals))
+    denominator = spread_f * spread_a
+
+    if denominator == 0:
+        return None
+    return numerator / denominator
+
+
 def summarise(pairs: Iterable[tuple[float, float]]) -> dict:
     """Summary statistics for a set of (forecast, actual) pairs."""
     pairs = list(pairs)
@@ -72,12 +105,21 @@ def summarise(pairs: Iterable[tuple[float, float]]) -> dict:
 
     errors = [forecast - actual for forecast, actual in pairs]
     absolute = [abs(error) for error in errors]
+    mean_bias = bias(errors)
 
     return {
         "n": len(errors),
         "mae_mw": round(mae(errors), 1),
         "rmse_mw": round(rmse(errors), 1),
-        "bias_mw": round(bias(errors), 1),
+        "bias_mw": round(mean_bias, 1),
+        # Error that remains once the constant offset is removed: the
+        # genuinely unpredictable, hour-to-hour component.
+        "mae_after_bias_correction_mw": round(
+            mae([error - mean_bias for error in errors]), 1
+        ),
+        "correlation": (
+            round(correlation(pairs), 3) if correlation(pairs) is not None else None
+        ),
         "p50_abs_error_mw": round(percentile(absolute, 50), 1),
         "p90_abs_error_mw": round(percentile(absolute, 90), 1),
         "max_abs_error_mw": round(max(absolute), 1),

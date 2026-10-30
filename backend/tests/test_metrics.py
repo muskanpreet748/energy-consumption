@@ -4,7 +4,15 @@ import math
 
 import pytest
 
-from core.metrics import bias, lead_bucket, mae, percentile, rmse, summarise
+from core.metrics import (
+    bias,
+    correlation,
+    lead_bucket,
+    mae,
+    percentile,
+    rmse,
+    summarise,
+)
 
 
 def test_mae_takes_absolute_values():
@@ -40,6 +48,26 @@ def test_summarise_returns_every_reported_field():
     assert stats["rmse_mw"] == 10.0
     assert stats["bias_mw"] == 0.0
     assert stats["max_abs_error_mw"] == 10.0
+
+
+def test_summarise_separates_constant_bias_from_random_error():
+    # Forecast is uniformly 100 MW high: raw error is 100, but once the
+    # offset is removed there is no unpredicted variation left at all.
+    stats = summarise([(100, 0), (200, 100), (300, 200)])
+    assert stats["bias_mw"] == 100.0
+    assert stats["mae_mw"] == 100.0
+    assert stats["mae_after_bias_correction_mw"] == 0.0
+
+
+def test_correlation_is_high_for_a_pure_constant_shift():
+    # Perfectly correlated shapes, wrong level.
+    pairs = [(110, 100), (210, 200), (310, 300)]
+    assert correlation(pairs) == pytest.approx(1.0)
+
+
+def test_correlation_is_none_when_a_series_is_constant():
+    assert correlation([(110, 100), (90, 100)]) is None
+    assert correlation([(100, 100)]) is None
 
 
 def test_summarise_needs_at_least_one_pair():
