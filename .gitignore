@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# Environment & editors
+.env
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+
+# NOTE: backend/data/snapshot.json is deliberately NOT ignored.
+# It is generated once and committed so anyone can run the app
+# without hitting the Elexon API.
