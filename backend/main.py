@@ -27,7 +27,24 @@ from core.align import actuals_by_hour, build_series
 from core.asof import GATE_TIME, available_vintages, deadline_for, pick_vintage
 from core.metrics import bias, lead_bucket, mae, percentile, rmse, summarise
 
-DEFAULT_SNAPSHOT = Path(__file__).resolve().parent / "data" / "snapshot.json"
+def _candidate_snapshot_paths() -> list[Path]:
+    """Every place the snapshot might live, in priority order.
+
+    Local runs and Docker keep it beside the code (``backend/data``). Vercel's
+    serverless bundle may root the files differently, so the bundle root is
+    checked too. ``SNAPSHOT_PATH`` always wins, which is how a production
+    deployment would point at object storage instead.
+    """
+    backend_dir = Path(__file__).resolve().parent
+    bundle_root = backend_dir.parent
+    return [
+        backend_dir / "data" / "snapshot.json",
+        bundle_root / "backend" / "data" / "snapshot.json",
+        bundle_root / "data" / "snapshot.json",
+    ]
+
+
+DEFAULT_SNAPSHOT = _candidate_snapshot_paths()[0]
 
 
 # --------------------------------------------------------------------------- #
@@ -94,9 +111,26 @@ class AccuracyResponse(BaseModel):
 # --------------------------------------------------------------------------- #
 # Application setup
 # --------------------------------------------------------------------------- #
+def resolve_snapshot_path() -> Path:
+    """Locate the snapshot, honouring SNAPSHOT_PATH when it is set."""
+    override = os.getenv("SNAPSHOT_PATH")
+    if override:
+        return Path(override)
+
+    for candidate in _candidate_snapshot_paths():
+        if candidate.exists():
+            return candidate
+
+    searched = "\n  ".join(str(path) for path in _candidate_snapshot_paths())
+    raise RuntimeError(
+        f"Snapshot not found. Searched:\n  {searched}\n"
+        "Run: python backend/scripts/build_snapshot.py"
+    )
+
+
 def load_snapshot() -> tuple[dict, dict, dict]:
     """Read the snapshot and pre-compute the indexes the API needs."""
-    path = Path(os.getenv("SNAPSHOT_PATH", DEFAULT_SNAPSHOT))
+    path = resolve_snapshot_path()
     if not path.exists():
         raise RuntimeError(
             f"Snapshot not found at {path}. "
