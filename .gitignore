@@ -23,3 +23,5 @@ dist/
 # NOTE: backend/data/snapshot.json is deliberately NOT ignored.
 # It is generated once and committed so anyone can run the app
 # without hitting the Elexon API.
+
+.vercel
