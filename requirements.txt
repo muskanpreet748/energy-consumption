@@ -1,0 +1,13 @@
+# Installed by Vercel for the serverless function in api/index.py.
+#
+# This must list dependencies explicitly: Vercel's requirements.txt parser is
+# not pip, and it rejects both "-r" includes and extras such as "pkg[extra]".
+#
+# backend/requirements.txt remains the source of truth for local development,
+# Docker and the test suite. Keep the two runtime pins in sync.
+#
+# pytest and httpx are deliberately absent here - they are test-only and would
+# only add cold-start weight to the deployed function.
+
+fastapi==0.115.6
+uvicorn==0.34.0

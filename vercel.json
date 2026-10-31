@@ -1,21 +1,23 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "version": 2,
-  "builds": [
-    {
-      "src": "backend/main.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+  "buildCommand": "npm --prefix frontend ci && npm --prefix frontend run build",
+  "outputDirectory": "frontend/dist",
+  "framework": null,
+  "regions": ["iad1"],
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "backend/data/**"
     }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api" }
   ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/backend/main.py" },
-    { "src": "/api", "dest": "/backend/main.py" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/frontend/dist/$1" }
+  "headers": [
+    {
+      "source": "/assets/:path*",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
   ]
 }
