@@ -310,12 +310,15 @@ response rather than accepted from the tool that produced it.
 
 ## 10. Video
 
-The ≤10-minute walkthrough will be linked here after recording:
+The ≤10-minute walkthrough is published here:
 
+* **▶ Watch:** <https://youtu.be/HR5BnVqEWLE>
 * **Part 1 — Client pitch (5 min):** the 09:50 problem, what the Decision
-  Desk shows, and the headline bias finding.
-* **Part 2 — Technical review (5 min):** point-in-time selection, the
-  alignment layer, metrics, tests, and the container/deploy setup.
+  Desk shows, the headline bias finding, and the six use cases the pilot
+  covers.
+* **Part 2 — Technical review (5 min):** architecture, point-in-time
+  selection, the alignment layer, metrics, the test suite, and the
+  container/deployment setup.
 
 ---
 
